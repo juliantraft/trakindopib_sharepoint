@@ -1,35 +1,37 @@
-from argparse import ArgumentParser, RawTextHelpFormatter
+from argparse import ArgumentParser, Namespace, RawTextHelpFormatter
 from datetime import datetime
 from dotenv import load_dotenv
 from os import getenv, scandir
 from os.path import abspath
 from time import sleep
-from sys import exit as terminate
 
 from src.sharepoint_bot import sharepoint_bot
 
+
 load_dotenv()
 
-parser = ArgumentParser(
-    formatter_class=RawTextHelpFormatter,
-    prog='python trakindopib_sharepoint.py',
-    description='''Performs Sharepoint automation for PIB documents.''',
-    epilog='(c) 2025 PT Pratama Natanusa Mandiri | github.com/juliantraft'
-)
 
-parser.add_argument('nomor_aju', help='ex: 00000000000000001234567890')
-parser.add_argument('-t', '--type' , type=str, metavar='', help='ex: Parts / SNP / PortalInput')
-parser.add_argument('-d', '--date' , type=str, metavar='', help='yyyy-mm-dd')
-parser.add_argument('-b', '--billcode' , type=str, metavar='', help='ex: 321250501703123')
-parser.add_argument('-s', '--total' , type=str, metavar='', help='ex: 123456789')
-parser.add_argument('--headless', action='store_true', help='toggle headless mode')
+def get_args(argv: list[str] | None = None) -> Namespace:
+    parser = ArgumentParser(
+        formatter_class=RawTextHelpFormatter,
+        description='Sharepoint web automation for CEISA documents',
+        usage='%(prog)s [options]',
+        epilog='(c) 2026 PT Pratama Natanusa Mandiri | github.com/juliantraft',
+    )
+    parser.add_argument('nomor_aju', help='ex: 00000000000000001234567890')
+    parser.add_argument('-t', '--type' , type=str, metavar='', help='ex: Parts / SNP / PortalInput')
+    parser.add_argument('-d', '--date' , type=str, metavar='', help='yyyy-mm-dd')
+    parser.add_argument('-b', '--billcode' , type=str, metavar='', help='ex: 321250501703123')
+    parser.add_argument('-s', '--total' , type=str, metavar='', help='ex: 123456789')
+    return parser.parse_args()
 
-args = parser.parse_args()
 
+args = get_args()
 SHAREPOINT_URL = 'https://tmtgroup.sharepoint.com/sites/portal_trakindo/pib/PIBDocument/Forms/AllItems.aspx?'
 SUPPORTING_DOCS_FOLDER = getenv('DOC_FOLDER')
 TEMP_FOLDER = 'TEMP_RPA'
 DOC_DATE = datetime.strptime(args.date, "%Y-%m-%d")
+
 
 with sharepoint_bot(headless=args.headless) as bot:
     bot.login(getenv('LOGIN_EMAIL'), getenv('LOGIN_PASSWORD'))
