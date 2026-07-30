@@ -1,12 +1,17 @@
 from argparse import ArgumentParser, Namespace, RawTextHelpFormatter
 from datetime import datetime
 from dotenv import load_dotenv
-from os import getenv, scandir
+from os import scandir
 from os.path import abspath
 from time import sleep
 
 from src.sharepoint_bot import sharepoint_bot
-
+from src.logging_setup import (
+    Logger,
+    enable_ntfy_logging,
+    init_logging,
+)
+from src.utils import get_env
 
 load_dotenv()
 
@@ -26,15 +31,23 @@ def get_args(argv: list[str] | None = None) -> Namespace:
     return parser.parse_args()
 
 
+def get_logger(debug: bool = False) -> Logger:
+    logger: Logger = init_logging(debug)
+    if not debug:
+        topic_url: str = get_env('NTFY_TOPIC_URL')
+        enable_ntfy_logging(topic_url)
+    return logger
+
+
 args = get_args()
 SHAREPOINT_URL = 'https://tmtgroup.sharepoint.com/sites/portal_trakindo/pib/PIBDocument/Forms/AllItems.aspx?'
-SUPPORTING_DOCS_FOLDER = getenv('DOC_FOLDER')
+SUPPORTING_DOCS_FOLDER = get_env('DOC_FOLDER')
 TEMP_FOLDER = 'TEMP_RPA'
 DOC_DATE = datetime.strptime(args.date, "%Y-%m-%d")
 
 
 with sharepoint_bot(headless=args.headless) as bot:
-    bot.login(getenv('LOGIN_EMAIL'), getenv('LOGIN_PASSWORD'))
+    bot.login(get_env('LOGIN_EMAIL'), get_env('LOGIN_PASSWORD'))
     bot.load_page(SHAREPOINT_URL, '[data-automationid="appMainContent"]')
 
     # Step 1 - upload supporting docs
