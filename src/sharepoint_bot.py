@@ -1,5 +1,5 @@
-from playwright.sync_api import sync_playwright, TimeoutError as PwTimeoutError
-import sys
+from playwright.sync_api import Locator, Page, TimeoutError as PwTimeoutError, sync_playwright
+
 
 LOGIN_URL = 'https://login.microsoftonline.com/'
 
@@ -81,20 +81,20 @@ class sharepoint_bot:
         '''
         Open a folder by name.
         '''
-        folder_row_selector = f'[class*="filesRow_"] span[role="button"]:has-text("{folder_name}")'
+        folder_row_selector = f'[data-automationid="field-LinkFilename"] span[role="button"]:text("{folder_name}")'
         self.page.dblclick(folder_row_selector)
 
         # Wait for folder to appear in last breadcrumb
         breadcrumbs = self.page.locator('ol[data-automationid="breadcrumb-root-id"] > li')
         last_crumb = breadcrumbs.nth(-1)
-        crumb = last_crumb.locator(f'[class*="breadcrumbNonNavigableItem_"]:has-text("{folder_name}")')
+        crumb = last_crumb.locator(f'span[title="{folder_name}"]')
         crumb.wait_for(state="visible", timeout=timeout)
 
     def folder_exists(self, folder_name: str, timeout=5000) -> bool:
         '''
         Checks if a folder exist within current directory.
         '''
-        folder_row_selector = f'[class*="filesRow_"] span[role="button"]:has-text("{folder_name}")'
+        folder_row_selector = f'[data-automationid="field-LinkFilename"] span[role="button"]:text("{folder_name}")'
         try:
             self.page.wait_for_selector(folder_row_selector, timeout=timeout)
             return True
@@ -121,7 +121,7 @@ class sharepoint_bot:
         new_folder_selector = 'button[data-automationid="newFolderCommand"]'
         input_selector = '[class*=nameDialogTextContent] input[type="text"]'
         create_btn_selector = '.fui-DialogActions button[data-automation-id="Create"]'
-        folder_row_selector = f'[class*="filesRow_"] span[role="button"]:has-text("{folder_name}")'
+        folder_row_selector = f'[data-automationid="field-LinkFilename"] span[role="button"]:text("{folder_name}")'
 
         page.wait_for_selector(new_btn_selector)
         page.click(new_btn_selector)
@@ -136,27 +136,24 @@ class sharepoint_bot:
         '''
         Upload multiple files from local path.
         '''
-        page = self.page
-        upload_btn_selector = 'button[data-automationid="uploadCommand"]'
-        upload_files_selector = 'button[data-automationid="uploadFileCommand"]'
-        toast_selector = '[class*="toastInnerContainer"] i[data-icon-name="CompletedSolid"]'
+        p: Page = self.page
+        l_upl_btn: Locator = p.locator('button[data-automationid="newCommand"]')
+        l_upl_files_btn: Locator = p.locator('button[data-automationid="uploadFile"]')
+        l_toast: Locator = p.locator('[class*="toastInnerContainer"] i[data-icon-name="CompletedSolid"]')
 
-        page.click(upload_btn_selector)
-        page.wait_for_selector(upload_files_selector)
-        
-        with page.expect_file_chooser() as fc_info:
-            page.click(upload_files_selector)
-
+        l_upl_btn.click()    
+        with p.expect_file_chooser() as fc_info:
+            l_upl_files_btn.click()
             fc = fc_info.value
             fc.set_files(file_paths)
 
-        page.wait_for_selector(toast_selector)
+        l_toast.wait_for(state='visible', timeout=20000)
 
     def folder_has_one_file(self) -> bool:
         '''
         Checks if folder has only one file.
         '''
-        folder_row_selector = f'[class*="filesRow_"]'
+        folder_row_selector = '[data-automationid="field-LinkFilename"] span[role="button"]:'
         files = self.page.query_selector_all(folder_row_selector)
         return True if len(files) == 1 else False
 
