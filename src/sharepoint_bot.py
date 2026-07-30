@@ -1,3 +1,5 @@
+from logging import Logger, getLogger
+
 from playwright.sync_api import Locator, Page, TimeoutError as PwTimeoutError, sync_playwright
 
 
@@ -7,6 +9,7 @@ class sharepoint_bot:
     '''
     Playwright bot implementation for common Sharepoint tasks.
     '''
+    logger: Logger = getLogger(__qualname__)
 
     def __init__(self, headless=True):
         self.headless = headless
@@ -38,22 +41,26 @@ class sharepoint_bot:
         '''
         Loads a page and wait for specific element to be visible before continuing.
         '''
+        self.logger.info(f'Loading page: {url}...')
+
         page = self.page
         for attempt in range(max_retries):
             try:
                 page.goto(url)
                 page.wait_for_selector(wait_selector, timeout=timeout)
+                self.logger.info('    OK')
                 break
             except PwTimeoutError:
                 page.reload()
         else:
-            print(f'Error: Failed to load {url} after {max_retries} retries')
+            self.logger.error(f'Error: Failed to load {url} after {max_retries} retries')
             raise PwTimeoutError
     
     def login(self, email: str, password: str) -> None:
         '''
         Performs login through [Microsoft](online.microsoft.com).
         '''
+        self.logger.info('Logging in...')
         page = self.page
 
         selector = {
@@ -76,11 +83,13 @@ class sharepoint_bot:
             page.click(selector['do_not_remember'])
         except PwTimeoutError:
             pass
+        self.logger.info('    OK')
   
     def open_folder(self, folder_name: str, timeout: int = 30000) -> None:
         '''
         Open a folder by name.
         '''
+        self.logger.info(f'Opening folder "{folder_name}"')
         folder_row_selector = f'[data-automationid="field-LinkFilename"] span[role="button"]:text("{folder_name}")'
         self.page.dblclick(folder_row_selector)
 
@@ -94,28 +103,35 @@ class sharepoint_bot:
         '''
         Checks if a folder exist within current directory.
         '''
+        self.logger.info(f'Checking folder "{folder_name}" presence...')
         folder_row_selector = f'[data-automationid="field-LinkFilename"] span[role="button"]:text("{folder_name}")'
         try:
             self.page.wait_for_selector(folder_row_selector, timeout=timeout)
+            self.logger.info('    OK: True')
             return True
         except PwTimeoutError:
+            self.logger.info('    OK: False')
             return False
     
     def folder_is_empty(self, timeout=5000) -> bool:
         '''
         Checks if the current folder is empty.
         '''
+        self.logger.info('Checking file presence...')
         empty_selector = '[data-automationid="list-empty-placeholder-title"]'
         try:
             self.page.wait_for_selector(empty_selector, timeout=timeout)
+            self.logger.info('    OK: True')
             return True
         except PwTimeoutError:
+            self.logger.info('    OK: False')
             return False
     
     def create_folder(self, folder_name: str) -> None:
         '''
         Create new folder.
         '''
+        self.logger.info(f'Creating folder "{folder_name}"...')
         page = self.page
         new_btn_selector = 'button[data-automationid="newCommand"]'
         new_folder_selector = 'button[data-automationid="newFolderCommand"]'
@@ -131,11 +147,13 @@ class sharepoint_bot:
         page.fill(input_selector, folder_name)
         page.click(create_btn_selector)
         page.wait_for_selector(folder_row_selector, timeout=10000)
+        self.logger.info('    OK')
 
     def upload_multiple_files(self, file_paths: list[str]) -> None:
         '''
         Upload multiple files from local path.
         '''
+        self.logger.info(f'Uploading files: {file_paths}...')
         p: Page = self.page
         l_upl_btn: Locator = p.locator('button[data-automationid="newCommand"]')
         l_upl_files_btn: Locator = p.locator('button[data-automationid="uploadFile"]')
@@ -148,6 +166,7 @@ class sharepoint_bot:
             fc.set_files(file_paths)
 
         l_toast.wait_for(state='visible', timeout=20000)
+        self.logger.info('    OK')
 
     def folder_has_one_file(self) -> bool:
         '''
@@ -161,6 +180,7 @@ class sharepoint_bot:
         '''
         Select all visible files.
         '''
+        self.logger.info('Selecting all visible files')
         header_row_selector = '[data-automationid="row-selection-header"]'
         self.page.locator(header_row_selector).click()
 
@@ -168,6 +188,7 @@ class sharepoint_bot:
         '''
         Delete selected files.
         '''
+        self.logger.info('Deleting selected files...')
         delete_btn_selector = '[role="menuitem"][data-automationid="deleteCommand"]'
         confirm_btn_selector = '.ms-Dialog-actions [data-automationid="confirmbutton"]'
         success_toast_selector = '[data-automationid="msFluentToast"] i[data-icon-name="CompletedSolid"]'
@@ -175,12 +196,14 @@ class sharepoint_bot:
         self.page.click(delete_btn_selector)
         self.page.click(confirm_btn_selector)
         self.page.wait_for_selector(success_toast_selector)
+        self.logger.info('    OK')
         
 
     def open_property_editor(self) -> None:
         '''
         Opens property editor.
         '''
+        self.logger.info('Opening property editor')
         more_btn_selector = '[data-automationid="more"][role="menuitem"]'
         properties_btn_selector = '[data-automationid="propertiesCommand"]'
         editor_panel_selector = '.ReactClientFormContent'
@@ -201,6 +224,7 @@ class sharepoint_bot:
         '''
         Opens the file picker for move operation.
         '''
+        self.logger.info('Opening move menu')
         more_btn_selector = '[role="menuitem"][data-automationid="more"]'
         move_btn_selector = '[data-automationid="moveCommand"]'
         fp_iframe_selector = 'iframe[data-automationid="filePickerFrame"]'
@@ -215,6 +239,7 @@ class sharepoint_bot:
         '''
         Search for a file by name.
         '''
+        self.logger.info(f'Searching file "{file_name}"...')
         page = self.page
         search_selector = 'input[type="search"][role="combobox"]'
         result_selector = '[data-automationid="ListCell"][data-list-index="0"]'
@@ -224,14 +249,15 @@ class sharepoint_bot:
         page.press(search_selector, 'Enter')
         try:
             page.wait_for_selector(result_selector, timeout=timeout)
+            self.logger.info('    OK: found')
             return True
         except PwTimeoutError:
             try:
                 page.wait_for_selector(empty_result_selector, timeout=1000)
-                print(f'Error: no items match "{file_name}"')
+                self.logger.warning('    OK: not found')
                 return False
             except PwTimeoutError:
-                print('Unknown search error')
+                self.logger.critical('Unknown search error')
 
     def search_by_property(self, key: str, value: str,  timeout=10000) -> None:
         '''
@@ -253,10 +279,10 @@ class sharepoint_bot:
         except PwTimeoutError:
             try:
                 page.wait_for_selector(empty_result_selector, timeout=1000)
-                print(f'Error: no items match "{value}" for "{key}')
+                self.logger.error(f'Error: no items match "{value}" for "{key}')
                 return False
             except PwTimeoutError:
-                print('Unknown search error')
+                self.logger.error('Unknown search error')
 
     ### SEARCH RESULT METHODS
 
@@ -264,6 +290,7 @@ class sharepoint_bot:
         '''
         Selects a file in search result and opens the `Copy to` menu.
         '''
+        self.logger.info(f'Opening copy menu for file "{file_name}"...')
         page = self.page
         result_checkbox_selector = f'[role="checkbox"][aria-label="{file_name}" i]'
         more_action_selector = 'button[role="menuitem"][aria-label="more" i]'
@@ -272,7 +299,7 @@ class sharepoint_bot:
         try:
             page.wait_for_selector(result_checkbox_selector, timeout=5000)
         except PwTimeoutError:
-            print(f'Error opening copy menu: file "{file_name}" not found in result')
+            self.logger.error(f'Error opening copy menu: file "{file_name}" not found in result')
             raise PwTimeoutError
 
         page.click(result_checkbox_selector)
@@ -285,6 +312,7 @@ class sharepoint_bot:
         iframe_selector = 'iframe[data-automationid="filePickerFrame"]'
         iframe_element = page.wait_for_selector(iframe_selector)
         self.iframe = iframe_element.content_frame()
+        self.logger.info('    OK')
 
     def sr_open_move_menu_for_file(self, file_name: str) -> None:
             '''
@@ -297,7 +325,7 @@ class sharepoint_bot:
             try:
                 page.wait_for_selector(result_row_selector, timeout=5000)
             except PwTimeoutError:
-                print(f'Error opening move menu: file "{file_name}" not found in result')
+                self.logger.error(f'Error opening move menu: file "{file_name}" not found in result')
                 raise PwTimeoutError
 
             page.click(result_row_selector)
@@ -348,6 +376,7 @@ class sharepoint_bot:
         '''
         Fill a form in properties editor.
         '''
+        self.logger.info(f'Filling "{form_name}"...')
         form_selector = f'.ReactFieldEditor:has(label.ReactFieldEditor-fieldTitle:has-text("{form_name}"))'
         input_selector = 'input[type="text"]'
 
@@ -357,6 +386,7 @@ class sharepoint_bot:
         '''
         Save changes in properties editor.
         '''
+        self.logger.info('Saving changes...')
         save_btn_selector = 'button[data-automationid="ReactClientFormSaveButton"]'
         outer_panel_selector = '.ReactClientFormContent'
         outer_panel_close_btn = 'button[class*=od-Panel-button--close]'
@@ -371,6 +401,7 @@ class sharepoint_bot:
             self.page.locator(outer_panel_selector).wait_for(state='detached')
         except PwTimeoutError:
             pass
+        self.logger.info('    OK')
 
     def pe_cancel(self) -> None:
         '''
@@ -388,6 +419,7 @@ class sharepoint_bot:
         '''
         Open folder in file picker window.
         '''
+        self.logger.info('Opening folder "{folder_name}"')
         folder_row_selector = f'[data-automationid="DetailsRow"][aria-label*="{folder_name}, Folder" i]'
         self.iframe.dblclick(folder_row_selector)
 
@@ -415,15 +447,16 @@ class sharepoint_bot:
         except PwTimeoutError:
             try:
                 self.iframe.wait_for_selector(empty_result_selector, timeout=1000)
-                print(f'Error: no items match "{search_input}"')
+                self.logger.error(f'Error: no items match "{search_input}"')
                 return False
             except PwTimeoutError:
-                print('Unknown search error')
+                self.logger.error('Unknown search error')
 
     def fp_move_one_level_up(self) -> None:
         '''
         Navigate one level up in file picker by clicking second last breadcrumb.
         '''
+        self.logger.info('Moving one folder level up...')
         breadcrumbs = self.iframe.locator('.ms-Breadcrumb[aria-label="Folder path"] > * > ol > li')
         second_last_crumb = breadcrumbs.nth(-2)
         second_last_crumb.click()
@@ -432,17 +465,21 @@ class sharepoint_bot:
         '''
         Checks if a folder exist in file picker window.
         '''
+        self.logger.info('Checking folder "{folder_name}" presence...')
         folder_row_selector = f'[data-automationid="DetailsRow"][aria-label*="{folder_name}, Folder" i]'
         try:
             self.iframe.wait_for_selector(folder_row_selector, timeout=timeout)
+            self.logger.info('    OK: True')
             return True
         except PwTimeoutError:
+            self.logger.info('    OK: False')
             return False
         
     def fp_create_folder(self, folder_name: str) -> None:
         '''
         Create new folder in file picker window.
         '''
+        self.logger.info('Creating folder "{folder_name}"...')
         iframe = self.iframe
         new_folder_btn_selector = 'button[data-automationid="createFolderCommand"]'
         input_selector = '[class*=nameDialogTextContent] input[type="text"]'
@@ -458,27 +495,30 @@ class sharepoint_bot:
         last_crumb = breadcrumbs.nth(-1)
         crumb = last_crumb.locator(f'.ms-TooltipHost:has-text("{folder_name}")')
         crumb.wait_for(state="visible")
+        self.logger.info('    OK')
 
     def fp_finish(self) -> None:
         '''
         Finish file picker operation (move/copy).
         '''
+        self.logger.info('Finishing copy/move operation...')
         finish_btn_selector = 'button[data-automationid="picker-complete"]'
         completed_toast_selector = '[data-automationid="msFluentToast"] i[data-icon-name="CompletedSolid"]'
 
         self.iframe.click(finish_btn_selector)
         self.page.locator(completed_toast_selector).wait_for(state='visible') # Completed notif
         self.iframe = None
+        self.logger.info('    OK')
 
     def fp_sr_finish(self) -> None:
         '''
         Finish file picker operation (move/copy) in search result page.
         '''
+        self.logger.info('Finishing copy/move operation...')
         finish_btn_selector = 'button[data-automationid="picker-complete"]'
         completed_notif_selector = '[class*=progressList]'
 
         self.iframe.click(finish_btn_selector)
         self.page.locator(completed_notif_selector).wait_for(state='visible') # Completed notif
         self.iframe = None
-
-
+        self.logger.info('    OK')
