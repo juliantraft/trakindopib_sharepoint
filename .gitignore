@@ -1,0 +1,31 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Development files
+.archive/
+.vscode/
+.ruff-cache/
+
+# Configuration
+.env
+config.toml
+
+# Execution files
+captcha_img/
+logs/
+samples/
+screenshots/
+sessions/
+temp_downloads/
+tests/
+
+# Ignore .lock files for portability
+uv.lock
