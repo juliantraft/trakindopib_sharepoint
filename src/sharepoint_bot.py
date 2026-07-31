@@ -545,10 +545,24 @@ class sharepoint_bot:
         '''
         self.logger.info('Finishing copy/move operation...')
         finish_btn_selector = 'button[data-automationid="picker-complete"]'
-        completed_toast_selector = '[data-automationid="msFluentToast"] i[data-icon-name="CompletedSolid"]'
+        toast_selector = '[data-automationid="msFluentToast"] i[data-icon-name="CompletedSolid"]'
+        error_selector = '[data-automationid="msFluentToast"] i[data-icon-name="StatusErrorFull"]'
+        error_msg = '[class*="errorDescription"]'
+        close_btn = 'button[title*="Dismiss notification"]'
 
         self.iframe.click(finish_btn_selector)
-        self.page.locator(completed_toast_selector).wait_for(state='visible') # Completed notif
+        try:
+            self.page.locator(toast_selector).wait_for(state='visible') # Completed notif
+        except PwTimeoutError:
+            self.page.locator(error_selector).wait_for(state='visible', timeout=5000)
+            msg = self.page.locator(error_msg).inner_text()
+
+            if 'A file with this name already exist' in msg:            
+                self.logger.warning('    WARNING: some files already exist')
+                self.page.locator(close_btn).click()
+            else:
+                raise RuntimeError(f'Unknown error msg after move/copy operation: {msg}')
+
         self.iframe = None
         self.logger.info('    OK')
 
