@@ -1,4 +1,6 @@
+# type: ignore
 from logging import Logger, getLogger
+from pathlib import Path
 
 from playwright.sync_api import Locator, Page, TimeoutError as PwTimeoutError, sync_playwright
 
@@ -149,7 +151,7 @@ class sharepoint_bot:
         page.wait_for_selector(folder_row_selector, timeout=10000)
         self.logger.info('    OK')
 
-    def upload_multiple_files(self, file_paths: list[str]) -> None:
+    def upload_multiple_files(self, file_paths: list[Path]) -> None:
         '''
         Upload multiple files from local path.
         '''
@@ -393,7 +395,7 @@ class sharepoint_bot:
         save_btn_selector = 'button[data-automationid="ReactClientFormSaveButton"]'
         outer_panel_selector = '.ReactClientFormContent'
         outer_panel_close_btn = 'button[class*=od-Panel-button--close]'
-        inner_panel_selector = '[class*=ReactClientFormContent]:has(.ReactClientForm-editButtons)'
+        inner_panel_selector = '[class*=ReactClientForm]:has(.ReactClientForm-editButtons)'
 
         self.page.click(save_btn_selector)
         self.page.locator(inner_panel_selector).wait_for(state='detached')
@@ -402,7 +404,8 @@ class sharepoint_bot:
             self.page.wait_for_selector(outer_panel_selector,timeout=1000)
             self.page.click(outer_panel_close_btn)
             self.page.locator(outer_panel_selector).wait_for(state='detached')
-        except PwTimeoutError:
+        except PwTimeoutError as e:
+            self.logger.debug(e)
             pass
         self.logger.info('    OK')
 
