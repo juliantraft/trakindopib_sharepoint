@@ -9,3 +9,12 @@ dependencies = [
     "python-dotenv==1.2.2",
     "requests==2.34.2",
 ]
+
+[tool.ruff]
+line-length = 96
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
