@@ -128,19 +128,15 @@ def upload_doc(task: tm.PIBTask, bot: sharepoint_bot, logger: Logger) -> None:
             bot.fp_create_folder(folder)
 
     bot.fp_finish()
+    task.status = tm.PIBStatus.SP_UPLOADED
 
 
 def rpa(logger: Logger, db_cnxn: Connection) -> None:
     cursor: Cursor = db_cnxn.cursor()
-    tasks: list[tm.PIBTask] = tm.get_tasks(cursor, 1)
+    tasks: list[tm.PIBTask] = tm.get_tasks(cursor, 100)
 
     if not tasks:
         return
-
-    for task in tasks:
-        print(task.data)
-
-    exit(1)
 
     with sharepoint_bot(headless=False) as bot:
         bot.login(get_env('LOGIN_EMAIL'), get_env('LOGIN_PASSWORD'))

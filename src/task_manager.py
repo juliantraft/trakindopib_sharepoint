@@ -24,7 +24,7 @@ class PIBData:
     folder_id: str
     no_aju: str
     type: str
-    doc_date: date
+    trx_date: date
     bill_code: str
     bill_total: Decimal
 
@@ -79,6 +79,7 @@ def get_tasks(cursor: Cursor, count: int = 100) -> list[PIBTask]:
     query: str = f"""
         SELECT TOP({count}) * FROM {CEISA_TABLE} 
         WHERE [Status] = {PIBStatus.CEISA_DOWNLOADED.value}
+        ORDER BY TglTrx DESC
     """
     rows: list[Row] = cursor.execute(query).fetchall()
 
@@ -89,7 +90,7 @@ def get_tasks(cursor: Cursor, count: int = 100) -> list[PIBTask]:
                 row.FolderID,
                 row.NoAJU,
                 row.Type,
-                row.TglPendaftaran,
+                row.TglTrx,
                 row.BillingDJBCKodeBilling,
                 row.BillingDJBCTotalAmount
             ),
