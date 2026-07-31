@@ -86,7 +86,7 @@ def upload_doc(task: tm.PIBTask, bot: sharepoint_bot, logger: Logger) -> None:
 
     # Step 2 - move main doc
     bot.load_page(SHAREPOINT_URL, '#listTabPanel')
-    bot.open_folder('Parts')
+    bot.open_folder(task.data.type)
 
     target_file = f'{task.data.no_aju}.pdf'
 
