@@ -1,11 +1,39 @@
 # type: ignore
+from datetime import datetime
 from logging import Logger, getLogger
 from pathlib import Path
 
 from playwright.sync_api import Locator, Page, TimeoutError as PwTimeoutError, sync_playwright
 
+from src.utils import get_main_path
+
 
 LOGIN_URL = 'https://login.microsoftonline.com/'
+
+
+PROJECT_DIR: Path = get_main_path().parent
+SCREENSHOT_DIR: Path = PROJECT_DIR / 'screenshots'
+SCREENSHOT_DIR.mkdir(exist_ok=True)
+
+
+async def take_screenshot(page: Page, save_dir: Path) -> Path:
+    """
+    Takes screenshot and saves it into a directory.
+
+    Args:
+        page (Page): `Page` object.
+        save_dir (Path): `Path` of save directory.
+
+    Returns:
+        Path: `Path` object of the saved screenshot.
+    """
+    save_dir.mkdir(exist_ok=True)
+    filename: str = datetime.now().strftime('%Y-%m-%d_%H-%M-%S_%f') + '.png'
+    filepath: Path = save_dir / filename
+
+    await page.screenshot(path=filepath)
+    return filepath
+
 
 class sharepoint_bot:
     '''
@@ -29,6 +57,9 @@ class sharepoint_bot:
         return self
     
     def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type:
+            await take_screenshot(self.page, SCREENSHOT_DIR)
+
         self.context.close()
         self.browser.close()
         self.playwright.stop()
