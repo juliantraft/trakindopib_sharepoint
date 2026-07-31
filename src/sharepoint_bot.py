@@ -2,6 +2,7 @@
 from datetime import datetime
 from logging import Logger, getLogger
 from pathlib import Path
+from time import sleep
 
 from playwright.sync_api import Locator, Page, TimeoutError as PwTimeoutError, sync_playwright
 
@@ -16,7 +17,7 @@ SCREENSHOT_DIR: Path = PROJECT_DIR / 'screenshots'
 SCREENSHOT_DIR.mkdir(exist_ok=True)
 
 
-async def take_screenshot(page: Page, save_dir: Path) -> Path:
+def take_screenshot(page: Page, save_dir: Path) -> Path:
     """
     Takes screenshot and saves it into a directory.
 
@@ -31,7 +32,7 @@ async def take_screenshot(page: Page, save_dir: Path) -> Path:
     filename: str = datetime.now().strftime('%Y-%m-%d_%H-%M-%S_%f') + '.png'
     filepath: Path = save_dir / filename
 
-    await page.screenshot(path=filepath)
+    page.screenshot(path=filepath)
     return filepath
 
 
@@ -58,7 +59,7 @@ class sharepoint_bot:
     
     def __exit__(self, exc_type, exc_value, traceback):
         if exc_type:
-            await take_screenshot(self.page, SCREENSHOT_DIR)
+            take_screenshot(self.page, SCREENSHOT_DIR)
 
         self.context.close()
         self.browser.close()
@@ -275,13 +276,17 @@ class sharepoint_bot:
         self.logger.info(f'Searching file "{file_name}"...')
         page = self.page
         search_selector = 'input[type="search"][role="combobox"]'
-        result_selector = '[class*="row_"] [data-automationid*="row-selection"]:not([data-automationid*="undefined"])'
+        loading_selector = '[data-automationid*="row-selection-undefined"]'
+        result_selector = '[class*="row_"] [data-automationid*="row-selection"]'
         empty_result_selector = '[data-automationid="list-empty-placeholder"]'
         
         page.fill(search_selector, file_name)
         page.press(search_selector, 'Enter')
+        sleep(2)
+        page.locator(loading_selector).wait_for(state='detached', timeout=timeout)
+
         try:
-            page.wait_for_selector(result_selector, timeout=timeout)
+            page.wait_for_selector(result_selector, timeout=100)
             self.logger.info('    OK: found')
             return True
         except PwTimeoutError:
