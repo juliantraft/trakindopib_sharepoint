@@ -97,6 +97,8 @@ def upload_doc(task: tm.PIBTask, bot: sharepoint_bot, logger: Logger) -> None:
         bot.fp_open_folder('CEISA')
         bot.fp_open_folder(TEMP_FOLDER)
         bot.fp_sr_finish()
+    else:
+        logger.warning(f'Main document "{target_file}" not found')
 
     # Step 3 - Edit properties and move files
     bot.load_page(SHAREPOINT_URL, '#listTabPanel')
@@ -140,10 +142,10 @@ def rpa(logger: Logger, db_cnxn: Connection) -> None:
 
     with sharepoint_bot(headless=False) as bot:
         bot.login(get_env('LOGIN_EMAIL'), get_env('LOGIN_PASSWORD'))
-        bot.load_page(SHAREPOINT_URL, '[data-automationid="appMainContent"]')
 
         for task in tasks:
             add_log_context({'no_aju': task.data.no_aju})
+            bot.load_page(SHAREPOINT_URL, '[data-automationid="appMainContent"]')
             upload_doc(task, bot, logger)
 
         del_log_context('no_aju')
