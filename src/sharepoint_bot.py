@@ -244,7 +244,7 @@ class sharepoint_bot:
         self.logger.info(f'Searching file "{file_name}"...')
         page = self.page
         search_selector = 'input[type="search"][role="combobox"]'
-        result_selector = '[class*="row_"] [data-automationid*="row-selection"]:not([data-automationid*="undefined"]'
+        result_selector = '[class*="row_"] [data-automationid*="row-selection"]:not([data-automationid*="undefined"])'
         empty_result_selector = '[data-automationid="list-empty-placeholder"]'
         
         page.fill(search_selector, file_name)

@@ -105,7 +105,7 @@ def upload_doc(task: tm.PIBTask, bot: sharepoint_bot, logger: Logger) -> None:
     bot.open_folder('CEISA')
     bot.open_folder(TEMP_FOLDER)
     
-    sleep(5)
+    sleep(2)
     bot.select_all_files()
     bot.open_property_editor()
 
