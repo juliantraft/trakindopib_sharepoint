@@ -269,14 +269,14 @@ class sharepoint_bot:
         iframe_element = self.page.wait_for_selector(fp_iframe_selector)
         self.iframe = iframe_element.content_frame()
 
-    def search_file(self, file_name: str, timeout=10000) -> bool:
+    def search_file(self, file_name: str, timeout=50000) -> bool:
         '''
         Search for a file by name.
         '''
         self.logger.info(f'Searching file "{file_name}"...')
         page = self.page
         search_selector = 'input[type="search"][role="combobox"]'
-        loading_selector = '[data-automationid*="row-selection-undefined"]'
+        loading_selector = '[data-automationid*="row-selection-und"]'
         result_selector = f'[role="row"]:has(span[title="{file_name}" i])'
         empty_result_selector = '[data-automationid="list-empty-placeholder"]'
         
@@ -286,7 +286,7 @@ class sharepoint_bot:
         page.locator(loading_selector).wait_for(state='detached', timeout=timeout)
 
         try:
-            page.wait_for_selector(result_selector, timeout=100)
+            page.wait_for_selector(result_selector, timeout=1000)
             self.logger.info('    OK: found')
             return True
         except PwTimeoutError:
@@ -295,7 +295,6 @@ class sharepoint_bot:
                 self.logger.warning('    OK: not found')
                 return False
             except PwTimeoutError:
-                self.logger.critical('Unknown search error')
                 raise
 
     def search_by_property(self, key: str, value: str,  timeout=10000) -> None:
@@ -552,7 +551,7 @@ class sharepoint_bot:
 
         self.iframe.click(finish_btn_selector)
         try:
-            self.page.locator(toast_selector).wait_for(state='visible') # Completed notif
+            self.page.locator(toast_selector).wait_for(state='visible', timeout=10000) # Completed notif
         except PwTimeoutError:
             self.page.locator(error_selector).wait_for(state='visible', timeout=5000)
             msg = self.page.locator(error_msg).inner_text()
