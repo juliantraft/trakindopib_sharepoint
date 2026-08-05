@@ -16,7 +16,8 @@ CEISA_TABLE = 'dbo.Ceisa'
 class PIBStatus(Enum):
     CEISA_NOT_FOUND = 0
     CEISA_DOWNLOADED = 1
-    SP_UPLOADED = 2
+    MAIN_DOC_MISSING = 2
+    SP_UPLOADED = 3
 
 
 @dataclass
@@ -78,8 +79,11 @@ def get_tasks(cursor: Cursor, count: int = 100) -> list[PIBTask]:
 
     query: str = f"""
         SELECT TOP({count}) * FROM {CEISA_TABLE} 
-        WHERE [Status] = {PIBStatus.CEISA_DOWNLOADED.value}
-        ORDER BY TglTrx DESC
+        WHERE [Status] IN (
+            {PIBStatus.CEISA_DOWNLOADED.value},
+            {PIBStatus.MAIN_DOC_MISSING.value}
+        )
+        ORDER BY [Status] ASC, TglTrx DESC
     """
     rows: list[Row] = cursor.execute(query).fetchall()
 

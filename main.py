@@ -98,7 +98,9 @@ def upload_doc(task: tm.PIBTask, bot: sharepoint_bot, logger: Logger) -> None:
         bot.fp_open_folder(TEMP_FOLDER)
         bot.fp_sr_finish()
     else:
-        logger.warning(f'Main document "{target_file}" not found')
+        logger.warning(f'Main document "{target_file}" not found, file is skipped')
+        task.status = tm.PIBStatus.MAIN_DOC_MISSING
+        return
 
     # Step 3 - Edit properties and move files
     bot.load_page(SHAREPOINT_URL, '#listTabPanel')
