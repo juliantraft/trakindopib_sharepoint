@@ -83,7 +83,7 @@ def get_tasks(cursor: Cursor, count: int = 100) -> list[PIBTask]:
             {PIBStatus.CEISA_DOWNLOADED.value},
             {PIBStatus.MAIN_DOC_MISSING.value}
         )
-        ORDER BY [Status] ASC, TglTrx DESC
+        ORDER BY [Status] ASC, LastRunDate ASC
     """
     rows: list[Row] = cursor.execute(query).fetchall()
 
